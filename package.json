@@ -4,6 +4,9 @@
 	"description": "Custom n8n nodes to interact with your invokati dashboards",
 	"license": "MIT",
 	"homepage": "",
+	"overrides": {
+    "change-case": "4.1.2"
+  },
 	"keywords": [
 		"n8n-community-node-package"
 	],
@@ -13,7 +16,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/<...>/n8n-nodes-<...>.git"
+		"url": "https://github.com/digitaldecibels/n8n-nodes-invokati"
 	},
 	"scripts": {
 		"build": "n8n-node build",
@@ -31,22 +34,28 @@
 		"n8nNodesApiVersion": 1,
 		"strict": true,
 		"credentials": [
-			"dist/credentials/GithubIssuesApi.credentials.js",
-			"dist/credentials/GithubIssuesOAuth2Api.credentials.js"
+			"dist/credentials/InvokatiApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/GithubIssues/GithubIssues.node.js",
-			"dist/nodes/Example/Example.node.js"
+			"dist/nodes/ExecuteWorkflowButton/ExecuteWorkflowButton.node.js",
+			"dist/nodes/TokenUsage/TokenUsage.node.js"
 		]
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
 		"eslint": "9.32.0",
+		"n8n-core": "^2.5.0",
+		"n8n-node-dev": "^2.5.0",
+		"n8n-nodes-base": "^2.5.0",
+		"n8n-workflow": "^2.5.0",
 		"prettier": "3.6.2",
 		"release-it": "^19.0.4",
 		"typescript": "5.9.2"
 	},
 	"peerDependencies": {
 		"n8n-workflow": "*"
+	},
+	"dependencies": {
+		"change-case": "4.1.2"
 	}
 }
