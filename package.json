@@ -37,7 +37,6 @@
 			"dist/credentials/InvokatiApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/ExecuteWorkflowButton/ExecuteWorkflowButton.node.js",
 			"dist/nodes/TokenUsage/TokenUsage.node.js"
 		]
 	},

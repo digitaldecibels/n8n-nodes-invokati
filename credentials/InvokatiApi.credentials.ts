@@ -31,22 +31,28 @@ export class InvokatiApi implements ICredentialType {
 		},
 	];
 
-	// This tells n8n how to authenticate using these credentials
-	authenticate: IAuthenticateGeneric = {
-		type: 'generic',
-		properties: {
-			headers: {
-				'X-API-Key': '={{$credentials.apiKey}}',
-			},
-		},
-	};
 
-	// Optional: Test the credentials to make sure they work
-	test: ICredentialTestRequest = {
-		request: {
-			baseURL: '={{$credentials.baseUrl}}',
-			url: '/api',
-			method: 'GET',
-		},
-	};
+	// 1. This ensures every API call from a workflow works
+    authenticate: IAuthenticateGeneric = {
+        type: 'generic',
+        properties: {
+            headers: {
+                'X-API-Key': '={{$credentials.apiKey}}',
+                'Host': 'atom8ui.lndo.site', // CRITICAL: Matches your wget test
+            },
+        },
+    };
+
+    // 2. This ensures the "Test Step" button in the Credential UI works
+    test: ICredentialTestRequest = {
+        request: {
+            baseURL: '={{$credentials.baseUrl}}', // In UI, set this to http://atom8ui_appserver_1
+            url: '/api/auth/test', // Ensure this endpoint exists in your Drupal/Invokati setup
+            method: 'GET',
+            headers: {
+                'Host': 'atom8ui.lndo.site', // CRITICAL: Matches your wget test
+            },
+        },
+    };
+
 }
