@@ -173,7 +173,7 @@ This ensures the sender receives a `200 OK` instantly.
 
 ## Step 3: Copy Webhook URL
 
-Copy the Webhook URL and paste it into your source application.
+Copy the Webhook URL and paste it into the "Endpoint" field of your dashboard trigger.
 
 ### Troubleshooting
 - Ensure the node is in **Listen for Event** mode
