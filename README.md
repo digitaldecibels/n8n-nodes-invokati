@@ -1,247 +1,182 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# API Configuration & n8n Integration Guide
 
-# n8n-nodes-starter
+## Your API Key
+**API Key:** [https://invokati.com/api-key](https://invokati.com/api-key)
 
-This starter repository helps you build custom integrations for [n8n](https://n8n.io). It includes example nodes, credentials, the node linter, and all the tooling you need to get started.
 
-## Quick Start
+## How to Use Your API Key
 
-> [!TIP]
-> **New to building n8n nodes?** The fastest way to get started is with `npm create @n8n/node`. This command scaffolds a complete node package for you using the [@n8n/node-cli](https://www.npmjs.com/package/@n8n/node-cli).
+Include your API key in request headers when making API calls.
 
-**To create a new node package from scratch:**
+### Recommended (X-API-Key header)
 
-```bash
-npm create @n8n/node
-```
+    X-API-Key: your-api-key-here
 
-**Already using this starter? Start developing with:**
+### Alternative (Bearer token)
 
-```bash
-npm run dev
-```
+    Authorization: Bearer your-api-key-here
 
-This starts n8n with your nodes loaded and hot reload enabled.
+---
 
-## What's Included
+# Track AI Token Usage from n8n
 
-This starter repository includes two example nodes to learn from:
+> 🚧 **Custom n8n nodes coming soon**
+> Until then, token tracking is done using an HTTP Request node.
 
-- **[Example Node](nodes/Example/)** - A simple starter node that shows the basic structure with a custom `execute` method
-- **[GitHub Issues Node](nodes/GithubIssues/)** - A complete, production-ready example built using the **declarative style**:
-  - **Low-code approach** - Define operations declaratively without writing request logic
-  - Multiple resources (Issues, Comments)
-  - Multiple operations (Get, Get All, Create)
-  - Two authentication methods (OAuth2 and Personal Access Token)
-  - List search functionality for dynamic dropdowns
-  - Proper error handling and typing
-  - Ideal for HTTP API-based integrations
+This allows you to track usage from:
+- OpenAI
+- Anthropic
+- Google AI
+- Any other AI provider supported by n8n
 
-> [!TIP]
-> The declarative/low-code style (used in GitHub Issues) is the recommended approach for building nodes that interact with HTTP APIs. It significantly reduces boilerplate code and handles requests automatically.
+---
 
-Browse these examples to understand both approaches, then modify them or create your own.
+## How Token Tracking Works
 
-## Finding Inspiration
+After any AI node in your workflow, send token usage data to the API using an **HTTP Request** node.
 
-Looking for more examples? Check out these resources:
+---
 
-- **[npm Community Nodes](https://www.npmjs.com/search?q=keywords:n8n-community-node-package)** - Browse thousands of community-built nodes on npm using the `n8n-community-node-package` tag
-- **[n8n Built-in Nodes](https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes)** - Study the source code of n8n's official nodes for production-ready patterns and best practices
-- **[n8n Credentials](https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/credentials)** - See how authentication is implemented for various services
+## Step 1: Add HTTP Request Node
 
-These are excellent resources to understand how to structure your nodes, handle different API patterns, and implement advanced features.
+Add an **HTTP Request** node immediately after your AI node.
 
-## Prerequisites
+---
 
-Before you begin, install the following on your development machine:
+## Step 2: Configure the HTTP Request
 
-### Required
+**Method**
 
-- **[Node.js](https://nodejs.org/)** (v22 or higher) and npm
-  - Linux/Mac/WSL: Install via [nvm](https://github.com/nvm-sh/nvm)
-  - Windows: Follow [Microsoft's NodeJS guide](https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows)
-- **[git](https://git-scm.com/downloads)**
+    POST
 
-### Recommended
+**URL**
 
-- Follow n8n's [development environment setup guide](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/)
+    https://atom8ui.lndo.site/api/token-usage
 
-> [!NOTE]
-> The `@n8n/node-cli` is included as a dev dependency and will be installed automatically when you run `npm install`. The CLI includes n8n for local development, so you don't need to install n8n globally.
+### Authentication (Header Auth)
 
-## Getting Started with this Starter
+| Header Name | Header Value |
+|------------|-------------|
+| X-API-Key  | your-api-key-here |
 
-Follow these steps to create your own n8n community node package:
+---
 
-### 1. Create Your Repository
+## Step 3: JSON Body
 
-[Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template, then clone it:
+Set **Body Content Type** to `JSON` and use the following structure:
 
-```bash
-git clone https://github.com/<your-organization>/<your-repo-name>.git
-cd <your-repo-name>
-```
+    {
+      "workflow_id": "{{ $workflow.id }}",
+      "execution_id": "{{ $execution.id }}",
+      "model_id": "gpt-4",
+      "input_tokens": {{ $json.usage.prompt_tokens }},
+      "output_tokens": {{ $json.usage.completion_tokens }}
+    }
 
-### 2. Install Dependencies
+### Token Field Mapping by Provider
 
-```bash
-npm install
-```
+- **OpenAI**
+  - `$json.usage.prompt_tokens`
+  - `$json.usage.completion_tokens`
+- **Anthropic**
+  - `$json.usage.input_tokens`
+  - `$json.usage.output_tokens`
+- **Google**
+  - `$json.usageMetadata.promptTokenCount`
+  - `$json.usageMetadata.candidatesTokenCount`
+- **Other providers**
+  - Inspect the AI node response structure
 
-This installs all required dependencies including the `@n8n/node-cli`.
+---
 
-### 3. Explore the Examples
+## Step 4: Field Reference
 
-Browse the example nodes in [nodes/](nodes/) and [credentials/](credentials/) to understand the structure:
+| Field | Required | Description | Example |
+|------|----------|-------------|---------|
+| workflow_id | Yes | n8n workflow ID | `{{ $workflow.id }}` |
+| execution_id | Yes | n8n execution ID | `{{ $execution.id }}` |
+| model_id | Yes | AI model name | `"gpt-4"` |
+| input_tokens | Yes | Input token count | `1500` |
+| output_tokens | Yes | Output token count | `800` |
+| installation_id | Optional | Installation ID | `123` |
+| node_id | Optional | n8n node ID | `"ai-node-1"` |
 
-- Start with [nodes/Example/](nodes/Example/) for a basic node
-- Study [nodes/GithubIssues/](nodes/GithubIssues/) for a real-world implementation
+---
 
-### 4. Build Your Node
+## Step 5: Example Response
 
-Edit the example nodes to fit your use case, or create new node files by copying the structure from [nodes/Example/](nodes/Example/).
+    {
+      "status": "success",
+      "message": "Token usage recorded successfully",
+      "id": 123,
+      "data": {
+        "workflow_id": "abc123-def456",
+        "execution_id": "exec-xyz789",
+        "model_id": "gpt-4",
+        "input_tokens": 1500,
+        "output_tokens": 800,
+        "total_tokens": 2300,
+        "input_cost": 0.045,
+        "output_cost": 0.048,
+        "total_cost": 0.093,
+        "model_found": true,
+        "model_label": "GPT-4"
+      }
+    }
 
-> [!TIP]
-> If you want to scaffold a completely new node package, use `npm create @n8n/node` to start fresh with the CLI's interactive generator.
+---
 
-### 5. Configure Your Package
+## Complete Example Workflow
 
-Update `package.json` with your details:
+1. **Trigger Node** — Webhook, Schedule, etc.
+2. **AI Node** — OpenAI, Anthropic, Google AI
+3. **HTTP Request Node** — Send token usage
+4. **Continue Workflow** — Process AI response
 
-- `name` - Your package name (must start with `n8n-nodes-`)
-- `author` - Your name and email
-- `repository` - Your repository URL
-- `description` - What your node does
+> ✅ **Pro Tip**
+> Set the HTTP Request node to **Continue On Fail** so your workflow doesn’t break if token tracking fails.
 
-Make sure your node is registered in the `n8n.nodes` array.
+---
 
-### 6. Develop and Test Locally
+# Set Up n8n Webhook Trigger
 
-Start n8n with your node loaded:
+Use webhooks to receive data from external systems.
 
-```bash
-npm run dev
-```
+---
 
-This command runs `n8n-node dev` which:
+## Testing vs Production
 
-- Builds your node with watch mode
-- Starts n8n with your node available
-- Automatically rebuilds when you make changes
-- Opens n8n in your browser (usually http://localhost:5678)
+- Use the **Test URL** while building
+- Switch to the **Production URL** and activate the workflow when live
 
-You can now test your node in n8n workflows!
+---
 
-> [!NOTE]
-> Learn more about CLI commands in the [@n8n/node-cli documentation](https://www.npmjs.com/package/@n8n/node-cli).
+## Step 1: Add Webhook Node
 
-### 7. Lint Your Code
+In n8n, click **+** and add a **Webhook** node.
 
-Check for errors:
+---
 
-```bash
-npm run lint
-```
+## Step 2: Configure Settings
 
-Auto-fix issues when possible:
+**HTTP Method**
 
-```bash
-npm run lint:fix
-```
+    POST
 
-### 8. Build for Production
+**Respond To**
 
-When ready to publish:
+    Immediately
 
-```bash
-npm run build
-```
+This ensures the sender receives a `200 OK` instantly.
 
-This compiles your TypeScript code to the `dist/` folder.
+---
 
-### 9. Prepare for Publishing
+## Step 3: Copy Webhook URL
 
-Before publishing:
+Copy the Webhook URL and paste it into your source application.
 
-1. **Update documentation**: Replace this README with your node's documentation. Use [README_TEMPLATE.md](README_TEMPLATE.md) as a starting point.
-2. **Update the LICENSE**: Add your details to the [LICENSE](LICENSE.md) file.
-3. **Test thoroughly**: Ensure your node works in different scenarios.
+### Troubleshooting
+- Ensure the node is in **Listen for Event** mode
+- Confirm the sender is sending valid `JSON`
 
-### 10. Publish to npm
-
-Publish your package to make it available to the n8n community:
-
-```bash
-npm publish
-```
-
-Learn more about [publishing to npm](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
-
-### 11. Submit for Verification (Optional)
-
-Get your node verified for n8n Cloud:
-
-1. Ensure your node meets the [requirements](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/):
-   - Uses MIT license ✅ (included in this starter)
-   - No external package dependencies
-   - Follows n8n's design guidelines
-   - Passes quality and security review
-
-2. Submit through the [n8n Creator Portal](https://creators.n8n.io/nodes)
-
-**Benefits of verification:**
-
-- Available directly in n8n Cloud
-- Discoverable in the n8n nodes panel
-- Verified badge for quality assurance
-- Increased visibility in the n8n community
-
-## Available Scripts
-
-This starter includes several npm scripts to streamline development:
-
-| Script                | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| `npm run dev`         | Start n8n with your node and watch for changes (runs `n8n-node dev`) |
-| `npm run build`       | Compile TypeScript to JavaScript for production (runs `n8n-node build`) |
-| `npm run build:watch` | Build in watch mode (auto-rebuild on changes)                    |
-| `npm run lint`        | Check your code for errors and style issues (runs `n8n-node lint`) |
-| `npm run lint:fix`    | Automatically fix linting issues when possible (runs `n8n-node lint --fix`) |
-| `npm run release`     | Create a new release (runs `n8n-node release`)                   |
-
-> [!TIP]
-> These scripts use the [@n8n/node-cli](https://www.npmjs.com/package/@n8n/node-cli) under the hood. You can also run CLI commands directly, e.g., `npx n8n-node dev`.
-
-## Troubleshooting
-
-### My node doesn't appear in n8n
-
-1. Make sure you ran `npm install` to install dependencies
-2. Check that your node is listed in `package.json` under `n8n.nodes`
-3. Restart the dev server with `npm run dev`
-4. Check the console for any error messages
-
-### Linting errors
-
-Run `npm run lint:fix` to automatically fix most common issues. For remaining errors, check the [n8n node development guidelines](https://docs.n8n.io/integrations/creating-nodes/).
-
-### TypeScript errors
-
-Make sure you're using Node.js v22 or higher and have run `npm install` to get all type definitions.
-
-## Resources
-
-- **[n8n Node Documentation](https://docs.n8n.io/integrations/creating-nodes/)** - Complete guide to building nodes
-- **[n8n Community Forum](https://community.n8n.io/)** - Get help and share your nodes
-- **[@n8n/node-cli Documentation](https://www.npmjs.com/package/@n8n/node-cli)** - CLI tool reference
-- **[n8n Creator Portal](https://creators.n8n.io/nodes)** - Submit your node for verification
-- **[Submit Community Nodes Guide](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/)** - Verification requirements and process
-
-## Contributing
-
-Have suggestions for improving this starter? [Open an issue](https://github.com/n8n-io/n8n-nodes-starter/issues) or submit a pull request!
-
-## License
-
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+---
