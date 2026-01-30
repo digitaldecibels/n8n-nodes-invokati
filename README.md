@@ -31,6 +31,12 @@ This allows you to track usage from:
 
 ---
 
+## Quick Setup: Use the Connect to n8n Button
+
+First, enable dashboard editing by clicking the toggle button at the top of the workflow dashboard. Then, click the **Connect to n8n** button to access pre-configured HTTP Request node code with your API key already filled in. Click to copy and paste it into your n8n workflow - no manual configuration needed
+
+---
+
 ## How Token Tracking Works
 
 After any AI node in your workflow, send token usage data to the API using an **HTTP Request** node.
@@ -141,6 +147,12 @@ Set **Body Content Type** to `JSON` and use the following structure:
 # Set Up n8n Webhook Trigger
 
 Use webhooks to receive data from external systems.
+
+---
+
+## Quick Setup: Use the Connect to n8n Button
+
+First, enable dashboard editing by clicking the toggle button at the top of the workflow dashboard. Then, click the **Connect to n8n** button to find a **Copy Trigger Node** button that copies a fully pre-configured webhook node to your clipboard. Simply paste it into your n8n workflow editor - no manual configuration needed
 
 ---
 
