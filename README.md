@@ -29,15 +29,28 @@ Go to **Settings → Community Nodes → Install** and enter `n8n-nodes-invokati
 
 ---
 
+## Your API Key
+
+Your API key is **automatically generated** when your Invokati account is created. To find it:
+
+1. Log in to your Invokati dashboard
+2. Navigate to `/api-key`
+
+Your key is displayed there and can be copied to your clipboard. If you need to rotate it, click **Regenerate Key** — this will invalidate the old key immediately, so update any integrations that use it.
+
+**Key format:** `atom8_{64-char-hex}`
+
+---
+
 ## Credential: Invokati API
 
-Before using any node, create an **Invokati API** credential:
+Before using any node, create an **Invokati API** credential in n8n:
 
-1. In n8n, go to **Credentials → New Credential → Invokati API**
+1. Go to **Credentials → New Credential → Invokati API**
 2. Set **API Base URL** to your Invokati installation (default: `https://invokati.com`)
-3. Set **API Key** — find yours at [https://invokati.com/api-key](https://invokati.com/api-key)
+3. Paste your API key into the **API Key** field
 
-The credential injects `X-API-Key: {your-key}` into every request automatically.
+The credential automatically injects `X-API-Key: {your-key}` into every request.
 
 **Alternative header format (also accepted):**
 ```
@@ -48,13 +61,13 @@ Authorization: Bearer your-api-key-here
 
 ## Node: Invokati Token Usage
 
-Tracks AI model token consumption and cost after any AI node in your workflow. Costs are calculated automatically by the Invokati platform using the model's pricing rates.
+Tracks AI model token consumption and cost after any AI node in your workflow. Costs are calculated automatically by the Invokati platform based on the model's pricing rates.
 
 ### How to Use
 
 1. Add the **Invokati Token Usage** node immediately after your AI node
 2. Select your **Invokati API** credential
-3. Fill in the required fields (the node auto-captures `workflow_id` and `execution_id`)
+3. Fill in the required fields — `workflow_id` and `execution_id` are captured automatically from the n8n execution context
 
 ### Fields
 
@@ -64,10 +77,8 @@ Tracks AI model token consumption and cost after any AI node in your workflow. C
 | Input Tokens | Yes | Tokens in the prompt/input | `{{ $json.usage.prompt_tokens }}` |
 | Output Tokens | Yes | Tokens in the completion/output | `{{ $json.usage.completion_tokens }}` |
 | Installation ID | No | Drupal node ID of the n8n installation | `123` |
-| Node ID | No | The specific n8n node that generated usage | `"ai-node-1"` |
-| Total Tokens | No | Override auto-calculated total | `2300` |
-
-`workflow_id` and `execution_id` are captured automatically from the n8n execution context.
+| Node ID | No | The n8n node that generated the usage | `"ai-node-1"` |
+| Total Tokens | No | Override auto-calculated total (defaults to input + output) | `2300` |
 
 ### Token Field Mapping by Provider
 
@@ -84,17 +95,17 @@ Tracks AI model token consumption and cost after any AI node in your workflow. C
 {
   "status": "success",
   "message": "Token usage recorded successfully",
-  "id": 123,
+  "id": 259,
   "data": {
-    "workflow_id": "abc123-def456",
-    "execution_id": "exec-xyz789",
+    "workflow_id": "b9NLgJV0oXIpXSsr",
+    "execution_id": "551",
     "model_id": "gpt-4",
-    "input_tokens": 1500,
-    "output_tokens": 800,
-    "total_tokens": 2300,
-    "input_cost": 0.045,
-    "output_cost": 0.048,
-    "total_cost": 0.093,
+    "input_tokens": 399,
+    "output_tokens": 288,
+    "total_tokens": 687,
+    "input_cost": 0.01197,
+    "output_cost": 0.01728,
+    "total_cost": 0.02925,
     "model_found": true,
     "model_label": "GPT-4"
   }
@@ -107,12 +118,12 @@ Tracks AI model token consumption and cost after any AI node in your workflow. C
 
 ## Alternative: HTTP Request Node
 
-If you prefer not to install this package, token usage can be tracked manually with a standard **HTTP Request** node.
+If you prefer not to install this package, token usage can be tracked with a standard **HTTP Request** node.
 
 **Method:** `POST`
 **URL:** `https://invokati.com/api/token-usage`
 
-**Authentication (Header Auth):**
+**Authentication — Header Auth:**
 | Header | Value |
 |--------|-------|
 | `X-API-Key` | `your-api-key-here` |
@@ -120,6 +131,7 @@ If you prefer not to install this package, token usage can be tracked manually w
 **Body (JSON):**
 ```json
 {
+  "n8n_base_url": "{{ $env.WEBHOOK_URL.split('/webhook')[0] }}",
   "workflow_id": "{{ $workflow.id }}",
   "execution_id": "{{ $execution.id }}",
   "model_id": "gpt-4",
@@ -128,6 +140,10 @@ If you prefer not to install this package, token usage can be tracked manually w
 }
 ```
 
+If your self-hosted n8n instance doesn't have `WEBHOOK_URL` set, replace the `n8n_base_url` value with your n8n installation URL directly (e.g., `"https://n8n.yourdomain.com"`).
+
+> From the Invokati dashboard: enable editing mode, click **Connect to n8n**, then use the **Copy HTTP Node** button to get a pre-configured node with your API key already filled in.
+
 ---
 
 ## Webhook Trigger Setup
@@ -135,13 +151,12 @@ If you prefer not to install this package, token usage can be tracked manually w
 To trigger an Invokati workflow from n8n:
 
 1. In n8n, add a **Webhook** node as your trigger
-2. Set **HTTP Method** to `POST` and **Respond** to `Immediately`
-3. Copy the webhook URL
-4. Paste it into the **Endpoint** field on your Invokati workflow dashboard
+2. Set **HTTP Method** to `POST`, **Path** to `invokati-trigger/[installation_id]/[workflow_id]`, and **Respond** to `Immediately`
+3. Copy the webhook URL and paste it into the **Endpoint** field on your Invokati workflow dashboard
 
 Use the **Test URL** while building and switch to the **Production URL** before activating.
 
-> From the Invokati dashboard: enable editing mode, click **Connect to n8n**, and use the **Copy Trigger Node** button to get a pre-configured webhook node you can paste directly into n8n.
+> From the Invokati dashboard: enable editing mode, click **Connect to n8n**, then use the **Copy Trigger Node** button to get a fully pre-configured webhook node you can paste directly into n8n — no manual setup needed.
 
 ---
 
