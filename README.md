@@ -1,194 +1,158 @@
-# API Configuration & n8n Integration Guide
+# n8n-nodes-invokati
 
-## Your API Key
-**API Key:** [https://invokati.com/api-key](https://invokati.com/api-key)
-
-
-## How to Use Your API Key
-
-Include your API key in request headers when making API calls.
-
-### Recommended (X-API-Key header)
-
-    X-API-Key: your-api-key-here
-
-### Alternative (Bearer token)
-
-    Authorization: Bearer your-api-key-here
+Custom n8n nodes for integrating with [Invokati](https://invokati.com) — track AI token usage and costs directly from your n8n workflows.
 
 ---
 
-# Track AI Token Usage from n8n
+## What's Included
 
-> 🚧 **Custom n8n nodes coming soon**
-> Until then, token tracking is done using an HTTP Request node.
-
-This allows you to track usage from:
-- OpenAI
-- Anthropic
-- Google AI
-- Any other AI provider supported by n8n
+| Type | Name | Description |
+|------|------|-------------|
+| Credential | **Invokati API** | Authenticates requests to your Invokati installation |
+| Node | **Invokati Token Usage** | Records AI model token usage and calculates costs |
 
 ---
 
-## Quick Setup: Use the Connect to n8n Button
+## Installation
 
-First, enable dashboard editing by clicking the toggle button at the top of the workflow dashboard. Then, click the **Connect to n8n** button to access pre-configured HTTP Request node code with your API key already filled in. Click to copy and paste it into your n8n workflow - no manual configuration needed
+### In a self-hosted n8n instance
 
----
+```bash
+npm install n8n-nodes-invokati
+```
 
-## How Token Tracking Works
+Then restart n8n. The nodes will appear in the node picker under the **Invokati** category.
 
-After any AI node in your workflow, send token usage data to the API using an **HTTP Request** node.
+### In n8n Cloud
 
----
-
-## Step 1: Add HTTP Request Node
-
-Add an **HTTP Request** node immediately after your AI node.
+Go to **Settings → Community Nodes → Install** and enter `n8n-nodes-invokati`.
 
 ---
 
-## Step 2: Configure the HTTP Request
+## Credential: Invokati API
 
-**Method**
+Before using any node, create an **Invokati API** credential:
 
-    POST
+1. In n8n, go to **Credentials → New Credential → Invokati API**
+2. Set **API Base URL** to your Invokati installation (default: `https://invokati.com`)
+3. Set **API Key** — find yours at [https://invokati.com/api-key](https://invokati.com/api-key)
 
-**URL**
+The credential injects `X-API-Key: {your-key}` into every request automatically.
 
-    https://atom8ui.lndo.site/api/token-usage
-
-### Authentication (Header Auth)
-
-| Header Name | Header Value |
-|------------|-------------|
-| X-API-Key  | your-api-key-here |
+**Alternative header format (also accepted):**
+```
+Authorization: Bearer your-api-key-here
+```
 
 ---
 
-## Step 3: JSON Body
+## Node: Invokati Token Usage
 
-Set **Body Content Type** to `JSON` and use the following structure:
+Tracks AI model token consumption and cost after any AI node in your workflow. Costs are calculated automatically by the Invokati platform using the model's pricing rates.
 
-    {
-      "workflow_id": "{{ $workflow.id }}",
-      "execution_id": "{{ $execution.id }}",
-      "model_id": "gpt-4",
-      "input_tokens": {{ $json.usage.prompt_tokens }},
-      "output_tokens": {{ $json.usage.completion_tokens }}
-    }
+### How to Use
+
+1. Add the **Invokati Token Usage** node immediately after your AI node
+2. Select your **Invokati API** credential
+3. Fill in the required fields (the node auto-captures `workflow_id` and `execution_id`)
+
+### Fields
+
+| Field | Required | Description | Example |
+|-------|----------|-------------|---------|
+| Model ID | Yes | AI model identifier | `gpt-4`, `claude-3-opus`, `gemini-pro` |
+| Input Tokens | Yes | Tokens in the prompt/input | `{{ $json.usage.prompt_tokens }}` |
+| Output Tokens | Yes | Tokens in the completion/output | `{{ $json.usage.completion_tokens }}` |
+| Installation ID | No | Drupal node ID of the n8n installation | `123` |
+| Node ID | No | The specific n8n node that generated usage | `"ai-node-1"` |
+| Total Tokens | No | Override auto-calculated total | `2300` |
+
+`workflow_id` and `execution_id` are captured automatically from the n8n execution context.
 
 ### Token Field Mapping by Provider
 
-- **OpenAI**
-  - `$json.usage.prompt_tokens`
-  - `$json.usage.completion_tokens`
-- **Anthropic**
-  - `$json.usage.input_tokens`
-  - `$json.usage.output_tokens`
-- **Google**
-  - `$json.usageMetadata.promptTokenCount`
-  - `$json.usageMetadata.candidatesTokenCount`
-- **Other providers**
-  - Inspect the AI node response structure
+| Provider | Input Tokens | Output Tokens |
+|----------|-------------|---------------|
+| **OpenAI** | `{{ $json.usage.prompt_tokens }}` | `{{ $json.usage.completion_tokens }}` |
+| **Anthropic** | `{{ $json.usage.input_tokens }}` | `{{ $json.usage.output_tokens }}` |
+| **Google AI** | `{{ $json.usageMetadata.promptTokenCount }}` | `{{ $json.usageMetadata.candidatesTokenCount }}` |
+| **Other** | Inspect the AI node output | Inspect the AI node output |
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Token usage recorded successfully",
+  "id": 123,
+  "data": {
+    "workflow_id": "abc123-def456",
+    "execution_id": "exec-xyz789",
+    "model_id": "gpt-4",
+    "input_tokens": 1500,
+    "output_tokens": 800,
+    "total_tokens": 2300,
+    "input_cost": 0.045,
+    "output_cost": 0.048,
+    "total_cost": 0.093,
+    "model_found": true,
+    "model_label": "GPT-4"
+  }
+}
+```
+
+> **Tip:** Enable **Continue On Fail** on this node so token tracking failures don't break your workflow.
 
 ---
 
-## Step 4: Field Reference
+## Alternative: HTTP Request Node
 
-| Field | Required | Description | Example |
-|------|----------|-------------|---------|
-| workflow_id | Yes | n8n workflow ID | `{{ $workflow.id }}` |
-| execution_id | Yes | n8n execution ID | `{{ $execution.id }}` |
-| model_id | Yes | AI model name | `"gpt-4"` |
-| input_tokens | Yes | Input token count | `1500` |
-| output_tokens | Yes | Output token count | `800` |
-| installation_id | Optional | Installation ID | `123` |
-| node_id | Optional | n8n node ID | `"ai-node-1"` |
+If you prefer not to install this package, token usage can be tracked manually with a standard **HTTP Request** node.
 
----
+**Method:** `POST`
+**URL:** `https://invokati.com/api/token-usage`
 
-## Step 5: Example Response
+**Authentication (Header Auth):**
+| Header | Value |
+|--------|-------|
+| `X-API-Key` | `your-api-key-here` |
 
-    {
-      "status": "success",
-      "message": "Token usage recorded successfully",
-      "id": 123,
-      "data": {
-        "workflow_id": "abc123-def456",
-        "execution_id": "exec-xyz789",
-        "model_id": "gpt-4",
-        "input_tokens": 1500,
-        "output_tokens": 800,
-        "total_tokens": 2300,
-        "input_cost": 0.045,
-        "output_cost": 0.048,
-        "total_cost": 0.093,
-        "model_found": true,
-        "model_label": "GPT-4"
-      }
-    }
+**Body (JSON):**
+```json
+{
+  "workflow_id": "{{ $workflow.id }}",
+  "execution_id": "{{ $execution.id }}",
+  "model_id": "gpt-4",
+  "input_tokens": "{{ $json.usage.prompt_tokens }}",
+  "output_tokens": "{{ $json.usage.completion_tokens }}"
+}
+```
 
 ---
 
-## Complete Example Workflow
+## Webhook Trigger Setup
 
-1. **Trigger Node** — Webhook, Schedule, etc.
-2. **AI Node** — OpenAI, Anthropic, Google AI
-3. **HTTP Request Node** — Send token usage
-4. **Continue Workflow** — Process AI response
+To trigger an Invokati workflow from n8n:
 
-> ✅ **Pro Tip**
-> Set the HTTP Request node to **Continue On Fail** so your workflow doesn’t break if token tracking fails.
+1. In n8n, add a **Webhook** node as your trigger
+2. Set **HTTP Method** to `POST` and **Respond** to `Immediately`
+3. Copy the webhook URL
+4. Paste it into the **Endpoint** field on your Invokati workflow dashboard
 
----
+Use the **Test URL** while building and switch to the **Production URL** before activating.
 
-# Set Up n8n Webhook Trigger
-
-Use webhooks to receive data from external systems.
+> From the Invokati dashboard: enable editing mode, click **Connect to n8n**, and use the **Copy Trigger Node** button to get a pre-configured webhook node you can paste directly into n8n.
 
 ---
 
-## Quick Setup: Use the Connect to n8n Button
+## Resources
 
-First, enable dashboard editing by clicking the toggle button at the top of the workflow dashboard. Then, click the **Connect to n8n** button to find a **Copy Trigger Node** button that copies a fully pre-configured webhook node to your clipboard. Simply paste it into your n8n workflow editor - no manual configuration needed
-
----
-
-## Testing vs Production
-
-- Use the **Test URL** while building
-- Switch to the **Production URL** and activate the workflow when live
+- [Invokati](https://invokati.com)
+- [Get your API key](https://invokati.com/api-key)
+- [GitHub repository](https://github.com/digitaldecibels/n8n-nodes-invokati)
 
 ---
 
-## Step 1: Add Webhook Node
+## License
 
-In n8n, click **+** and add a **Webhook** node.
-
----
-
-## Step 2: Configure Settings
-
-**HTTP Method**
-
-    POST
-
-**Respond To**
-
-    Immediately
-
-This ensures the sender receives a `200 OK` instantly.
-
----
-
-## Step 3: Copy Webhook URL
-
-Copy the Webhook URL and paste it into the "Endpoint" field of your dashboard trigger.
-
-### Troubleshooting
-- Ensure the node is in **Listen for Event** mode
-- Confirm the sender is sending valid `JSON`
-
----
+MIT

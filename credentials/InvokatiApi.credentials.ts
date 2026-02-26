@@ -14,7 +14,7 @@ export class InvokatiApi implements ICredentialType {
 			displayName: 'API Base URL',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'https://atom8ui.lndo.site',
+			default: 'https://invokati.com',
 			description: 'The base URL of your Invokati installation',
 			placeholder: 'https://your-domain.com',
 		},
@@ -32,26 +32,20 @@ export class InvokatiApi implements ICredentialType {
 	];
 
 
-	// 1. This ensures every API call from a workflow works
-    authenticate: IAuthenticateGeneric = {
+	authenticate: IAuthenticateGeneric = {
         type: 'generic',
         properties: {
             headers: {
                 'X-API-Key': '={{$credentials.apiKey}}',
-                'Host': 'atom8ui.lndo.site', // CRITICAL: Matches your wget test
             },
         },
     };
 
-    // 2. This ensures the "Test Step" button in the Credential UI works
     test: ICredentialTestRequest = {
         request: {
-            baseURL: '={{$credentials.baseUrl}}', // In UI, set this to http://atom8ui_appserver_1
-            url: '/api/auth/test', // Ensure this endpoint exists in your Drupal/Invokati setup
+            baseURL: '={{$credentials.baseUrl}}',
+            url: '/api/auth/test',
             method: 'GET',
-            headers: {
-                'Host': 'atom8ui.lndo.site', // CRITICAL: Matches your wget test
-            },
         },
     };
 
