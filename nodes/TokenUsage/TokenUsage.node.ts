@@ -89,11 +89,12 @@ export class TokenUsage implements INodeType {
                         description: 'The Drupal node ID of the n8n installation',
                     },
                     {
-                        displayName: 'Node ID',
+                        displayName: 'Node Name',
                         name: 'nodeId',
                         type: 'string',
                         default: '',
-                        description: 'The specific n8n node that generated the token usage',
+                        placeholder: 'e.g., AI Agent, OpenAI',
+                        description: 'The n8n node name that generated the token usage (for attribution in reports)',
                     },
                     {
                         displayName: 'Total Tokens',
@@ -114,14 +115,9 @@ export class TokenUsage implements INodeType {
 
         // Get credentials
         const credentials = await this.getCredentials('invokatiApi');
-        const baseUrl = credentials.baseUrl as string;
+        const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
         const apiKey = credentials.apiKey as string;
 
-        // --- NEW: GET N8N BASE URL ---
-        // This retrieves the WEBHOOK_URL or N8N_EDITOR_BASE_URL defined in the n8n environment
-        const n8nBaseUrl = process.env.WEBHOOK_URL || process.env.N8N_EDITOR_BASE_URL || '';
-
-        // 1. Get Automatic IDs once outside the loop
         const workflowId = this.getWorkflow().id as string;
         const executionId = this.getExecutionId();
 
@@ -147,8 +143,6 @@ export class TokenUsage implements INodeType {
                         input_tokens: inputTokens,
                         output_tokens: outputTokens,
                         total_tokens: totalTokens,
-                        // --- NEW: INCLUDE IN PAYLOAD ---
-                        n8n_base_url: n8nBaseUrl,
                     };
 
                     if (additionalFields.installationId) {

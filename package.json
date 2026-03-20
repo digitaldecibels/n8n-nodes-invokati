@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-invokati",
-	"version": "0.1.0",
+	"version": "0.3.0",
 	"description": "Custom n8n nodes to interact with your invokati dashboards",
 	"license": "MIT",
 	"homepage": "",
@@ -37,7 +37,12 @@
 			"dist/credentials/InvokatiApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/TokenUsage/TokenUsage.node.js"
+			"dist/nodes/ExecuteWorkflowButton/ExecuteWorkflowButton.node.js",
+			"dist/nodes/TokenUsage/TokenUsage.node.js",
+			"dist/nodes/LeadManager/LeadManager.node.js",
+			"dist/nodes/MediaManager/MediaManager.node.js",
+			"dist/nodes/PayloadManager/PayloadManager.node.js",
+			"dist/nodes/DashboardNotifier/DashboardNotifier.node.js"
 		]
 	},
 	"devDependencies": {
