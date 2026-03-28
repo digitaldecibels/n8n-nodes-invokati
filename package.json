@@ -42,7 +42,10 @@
 			"dist/nodes/LeadManager/LeadManager.node.js",
 			"dist/nodes/MediaManager/MediaManager.node.js",
 			"dist/nodes/PayloadManager/PayloadManager.node.js",
-			"dist/nodes/DashboardNotifier/DashboardNotifier.node.js"
+			"dist/nodes/DashboardNotifier/DashboardNotifier.node.js",
+			"dist/nodes/ChatLogger/ChatLogger.node.js",
+			"dist/nodes/ChatTrigger/InvokatiChatTrigger.node.js",
+			"dist/nodes/InvoiceManager/InvoiceManager.node.js"
 		]
 	},
 	"devDependencies": {

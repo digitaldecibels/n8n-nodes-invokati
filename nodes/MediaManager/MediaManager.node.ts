@@ -58,11 +58,17 @@ export class MediaManager implements INodeType {
                         description: 'List media items with optional filters',
                         action: 'List media items',
                     },
+                    {
+                        name: 'Delete Media Item',
+                        value: 'delete',
+                        description: 'Permanently delete a media item by ID',
+                        action: 'Delete a media item',
+                    },
                 ],
                 default: 'create',
             },
 
-            // Media ID — update, get
+            // Media ID — update, get, delete
             {
                 displayName: 'Media ID',
                 name: 'mediaId',
@@ -72,7 +78,7 @@ export class MediaManager implements INodeType {
                 description: 'The Invokati media item ID',
                 displayOptions: {
                     show: {
-                        operation: ['update', 'get'],
+                        operation: ['update', 'get', 'delete'],
                     },
                 },
             },
@@ -232,11 +238,11 @@ export class MediaManager implements INodeType {
                         default: false,
                     },
                     {
-                        displayName: 'Resume URL',
+                        displayName: 'Resume URL Override',
                         name: 'resume_url',
                         type: 'string',
                         default: '',
-                        description: 'n8n Wait node webhook URL to call when the item is approved or denied.',
+                        description: 'Override the auto-detected resume URL. Leave blank to use $execution.resumeUrl automatically.',
                     },
                     {
                         displayName: 'Thumbnail URL',
@@ -291,18 +297,6 @@ export class MediaManager implements INodeType {
                         name: 'height',
                         type: 'number',
                         default: 0,
-                    },
-                    {
-                        displayName: 'Workflow ID',
-                        name: 'workflow_id',
-                        type: 'string',
-                        default: '={{ $workflow.id }}',
-                    },
-                    {
-                        displayName: 'Execution ID',
-                        name: 'execution_id',
-                        type: 'string',
-                        default: '={{ $execution.id }}',
                     },
                 ],
             },
@@ -365,8 +359,15 @@ export class MediaManager implements INodeType {
                     const title = this.getNodeParameter('title', i) as string;
                     const additional = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 
-                    const workflowId = additional.workflow_id || String(this.getWorkflow().id);
-                    const executionId = additional.execution_id || String(this.getExecutionId());
+                    // Always auto-detect from execution context; additionalFields can override.
+                    const workflowId = String(this.getWorkflow().id);
+                    const executionId = String(this.getExecutionId());
+                    let resumeUrl = '';
+                    try {
+                        resumeUrl = String(this.evaluateExpression('={{ $execution.resumeUrl }}', i) ?? '');
+                    } catch {}
+                    // additionalFields.resume_url explicitly set overrides the auto value
+                    if (additional.resume_url) resumeUrl = additional.resume_url as string;
 
                     if (inputType === 'upload') {
                         const binaryProp = this.getNodeParameter('binaryPropertyName', i) as string;
@@ -384,12 +385,12 @@ export class MediaManager implements INodeType {
                             title,
                             workflow_id: workflowId,
                             execution_id: executionId,
+                            resume_url: resumeUrl,
                         };
 
                         const textFields = [
                             'description', 'tags', 'collection_name',
-                            'automation_status', 'resume_url', 'mime_type',
-                            'duration', 'file_size',
+                            'automation_status', 'mime_type', 'duration', 'file_size',
                         ];
                         for (const field of textFields) {
                             if (additional[field] !== undefined && additional[field] !== '') {
@@ -429,9 +430,10 @@ export class MediaManager implements INodeType {
                             url: sourceUrl,
                             workflow_id: workflowId,
                             execution_id: executionId,
+                            resume_url: resumeUrl,
                         };
 
-                        const skip = new Set(['workflow_id', 'execution_id']);
+                        const skip = new Set(['resume_url']);
                         for (const [k, v] of Object.entries(additional)) {
                             if (!skip.has(k) && v !== '' && v !== 0 && v !== false) body[k] = v;
                         }
@@ -476,6 +478,16 @@ export class MediaManager implements INodeType {
                     response = await this.helpers.request({
                         method: 'GET' as IHttpRequestMethods,
                         uri: `${baseUrl}/api/media/list?${params.toString()}`,
+                        headers: jsonHeaders,
+                        json: true,
+                    });
+
+                } else if (operation === 'delete') {
+                    const mediaId = this.getNodeParameter('mediaId', i) as string;
+
+                    response = await this.helpers.request({
+                        method: 'DELETE' as IHttpRequestMethods,
+                        uri: `${baseUrl}/api/media/${mediaId}`,
                         headers: jsonHeaders,
                         json: true,
                     });

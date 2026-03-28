@@ -64,11 +64,17 @@ export class PayloadManager implements INodeType {
                         description: 'Deny a pending payload and optionally resume the workflow',
                         action: 'Deny a payload',
                     },
+                    {
+                        name: 'Delete Payload',
+                        value: 'delete',
+                        description: 'Permanently delete a payload by ID',
+                        action: 'Delete a payload',
+                    },
                 ],
                 default: 'create',
             },
 
-            // Payload ID — update, get, approve, deny
+            // Payload ID — update, get, approve, deny, delete
             {
                 displayName: 'Payload ID',
                 name: 'payloadId',
@@ -78,7 +84,7 @@ export class PayloadManager implements INodeType {
                 description: 'The Invokati payload ID',
                 displayOptions: {
                     show: {
-                        operation: ['update', 'get', 'approve', 'deny'],
+                        operation: ['update', 'get', 'approve', 'deny', 'delete'],
                     },
                 },
             },
@@ -320,6 +326,16 @@ export class PayloadManager implements INodeType {
                             entity_id: payloadId,
                             notes,
                         },
+                        json: true,
+                    });
+
+                } else if (operation === 'delete') {
+                    const payloadId = this.getNodeParameter('payloadId', i) as string;
+
+                    response = await this.helpers.request({
+                        method: 'DELETE' as IHttpRequestMethods,
+                        uri: `${baseUrl}/api/payloads/${payloadId}`,
+                        headers,
                         json: true,
                     });
                 }
